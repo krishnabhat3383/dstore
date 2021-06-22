@@ -57,39 +57,54 @@ impl REPL {
             let words: Vec<String> = cmd.split(" ").map(|x| x.to_string()).collect();
             match words[0].to_lowercase().as_ref() {
                 "set" | "put" | "insert" | "in" | "i" => {
-                    let key = Bytes::from(words[1].clone());
-                    let value = Bytes::from(words[2..].join(" "));
-                    match self.local.lock().await.insert(key, value).await {
-                        Ok(m) => eprintln!("{}", m),
-                        Err(e) => eprintln!("{}", e),
+                    if words.len() <= 2 {
+                        eprintln!("Usage set/put/insert/in/i <key> <value>");
+                    }
+                    else {
+                        let key = Bytes::from(words[1].clone());
+                        let value = Bytes::from(words[2..].join(" "));
+                        match self.local.lock().await.insert(key, value).await {
+                            Ok(m) => eprintln!("{}", m),
+                            Err(e) => eprintln!("{}", e),
+                        }
                     }
 
                     Ok(())
                 }
                 "get" | "select" | "output" | "out" | "o" => {
-                    let key = Bytes::from(words[1].clone());
-                    match self.local.lock().await.get(&key).await {
-                        Ok((msg, value)) => {
-                            if msg != "" {
-                                eprintln!("{}", msg);
+                    if words.len() <= 1 {
+                        eprintln!("Usage: get/select/output/out/o <key>");
+                    }
+                    else {
+                        let key = Bytes::from(words[1].clone());
+                        match self.local.lock().await.get(&key).await {
+                            Ok((msg, value)) => {
+                                if msg != "" {
+                                    eprintln!("{}", msg);
+                                }
+                                println!(
+                                    "db: {} -> {}",
+                                    String::from_utf8(key.to_vec())?,
+                                    String::from_utf8(value.to_vec())?
+                                )
                             }
-                            println!(
-                                "db: {} -> {}",
-                                String::from_utf8(key.to_vec())?,
-                                String::from_utf8(value.to_vec())?
-                            )
+                            Err(e) => eprintln!("{}", e),
                         }
-                        Err(e) => eprintln!("{}", e),
                     }
 
                     Ok(())
                 }
                 "del" | "delete" | "rem" | "remove" | "rm" | "d" => {
                     // Removes only from local
-                    let key = Bytes::from(words[1].clone());
-                    match self.local.lock().await.remove(&key).await {
-                        Ok(m) => eprintln!("{}", m),
-                        Err(e) => eprintln!("{}", e),
+                    if words.len() <= 1 {
+                        eprintln!("Usage: del/delete/rem/remove/rm/d <key>")
+                    }
+                    else{
+                        let key = Bytes::from(words[1].clone());
+                        match self.local.lock().await.remove(&key).await {
+                            Ok(m) => eprintln!("{}", m),
+                            Err(e) => eprintln!("{}", e),
+                        }
                     }
 
                     Ok(())
